@@ -1,0 +1,1604 @@
+// =============================================
+// PRISMA SCHEMA DEFINITION
+// =============================================
+// This schema implements a complete ticketing system with:
+// - User management and RBAC (Role-Based Access Control)
+// - Workflow automation with state transitions
+// - Full audit logging and change tracking
+// - Soft delete functionality
+// - Integration with external systems
+// - Multi-Factor Authentication (MFA)
+// - Notification system
+// - Job scheduling and locking
+// - Data import and export capabilities
+// - Views for reporting and analytics
+// - Support for multiple languages and locales
+// - Support for multiple authentication methods (LDAP, OAuth, JWT)
+
+// =============================================
+// 1. GENERATOR & DATA SOURCE CONFIGURATION
+// =============================================
+
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["views"]
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+// =============================================
+// 3. CORE MODELS & CONCEPTS
+// =============================================
+model People {
+  id    String  @id @default(uuid()) @db.Char(36)
+  name  String
+  email String  @unique
+  phone String?
+
+  // Organizational relationships
+  delcomId String? @db.Char(36)
+  Delcom   Delcom? @relation(fields: [delcomId], references: [id])
+  agencyId String? @db.Char(36)
+  Agency   Agency? @relation(fields: [agencyId], references: [id])
+
+  // Timestamps and user action tracting
+  createdBy String   @db.Char(36)
+  createdAt DateTime @default(now())
+
+  updatedBy String   @db.Char(36)
+  updatedAt DateTime @updatedAt
+
+  // Soft delete tracking
+  deleted   Boolean   @default(false)
+  deletedAt DateTime?
+  deletedBy String?   @db.Char(36)
+
+  // relationships
+  Creator User  @relation("createdBy", fields: [createdBy], references: [id])
+  Updater User  @relation("updatedBy", fields: [updatedBy], references: [id])
+  Deleter User? @relation("deletedBy", fields: [deletedBy], references: [id])
+
+  User User[]
+
+  @@index([name])
+  @@index([email])
+  @@index([email, deleted])
+  @@index([agencyId])
+  @@index([delcomId])
+  @@index([createdBy])
+  @@index([updatedBy])
+  @@index([deletedBy])
+  @@index([deleted])
+  @@map("people")
+}
+
+model Agency {
+  id       String @id @default(uuid()) @db.Char(36)
+  name     String @unique
+  // Organizational relationships
+  delcomId String @db.Char(36)
+  Delcom   Delcom @relation(fields: [delcomId], references: [id])
+
+  // Timestamps and user action tracting
+  createdBy String   @db.Char(36)
+  createdAt DateTime @default(now())
+
+  updatedBy String   @db.Char(36)
+  updatedAt DateTime @updatedAt
+
+  // Soft delete tracking
+  deleted   Boolean   @default(false)
+  deletedAt DateTime?
+  deletedBy String?   @db.Char(36)
+
+  // relationships
+  Creator User  @relation("createdBy", fields: [createdBy], references: [id])
+  Updater User  @relation("updatedBy", fields: [updatedBy], references: [id])
+  Deleter User? @relation("deletedBy", fields: [deletedBy], references: [id])
+
+  People People[]
+
+  @@index([delcomId])
+  @@index([name])
+  @@index([createdBy])
+  @@index([updatedBy])
+  @@index([deletedBy])
+  @@map("agencies")
+}
+
+model Delcom {
+  id       String @id @default(uuid()) @db.Char(36)
+  name     String @unique
+  regionId String @db.Char(36)
+  Region   Region @relation(fields: [regionId], references: [id])
+
+  // Timestamps and user action tracting
+  createdBy String   @db.Char(36)
+  createdAt DateTime @default(now())
+
+  updatedBy String   @db.Char(36)
+  updatedAt DateTime @updatedAt
+
+  // Soft delete tracking
+  deleted   Boolean   @default(false)
+  deletedAt DateTime?
+  deletedBy String?   @db.Char(36)
+
+  // relationships
+  Creator User  @relation("createdBy", fields: [createdBy], references: [id])
+  Updater User  @relation("updatedBy", fields: [updatedBy], references: [id])
+  Deleter User? @relation("deletedBy", fields: [deletedBy], references: [id])
+
+  Agency Agency[]
+  People People[]
+
+  @@index([regionId])
+  @@index([name])
+  @@index([createdBy])
+  @@index([updatedBy])
+  @@index([deletedBy])
+  @@map("delcoms")
+}
+
+model Region {
+  id        String   @id @default(uuid()) @db.Char(36)
+  name      String   @unique
+  // Timestamps and user action tracting
+  createdBy String   @db.Char(36)
+  createdAt DateTime @default(now())
+
+  updatedBy String   @db.Char(36)
+  updatedAt DateTime @updatedAt
+
+  // Soft delete tracking
+  deleted   Boolean   @default(false)
+  deletedAt DateTime?
+  deletedBy String?   @db.Char(36)
+
+  // relationships
+  Creator User  @relation("createdBy", fields: [createdBy], references: [id])
+  Updater User  @relation("updatedBy", fields: [updatedBy], references: [id])
+  Deleter User? @relation("deletedBy", fields: [deletedBy], references: [id])
+
+  Delcom Delcom[]
+
+  @@index([name])
+  @@map("regions")
+}
+
+model t_import_clients_cms {
+  SERVICE_NUMBER         Int     @id
+  SUPPLY_POINT           Int?
+  CODE_CLIENT            Int?
+  NOM_CLIENT             String? @db.VarChar(110)
+  NO_COMPTEUR            String? @db.VarChar(35)
+  ADRESSE_CLIENT         String? @db.VarChar(85)
+  CONTACT_CLIENT         String? @db.VarChar(65)
+  CODE_TARIF_CLIENT      String? @db.VarChar(4)
+  LIBELLE_TARIF_CLIENT   String? @db.VarChar(30)
+  CODE_STATUT_CONTRAT    String? @db.VarChar(5)
+  LIBELLE_STATUT_CONTRAT String? @db.Text
+  CODE_TYPE_PHASE        String? @db.VarChar(5)
+  LIBELLE_TYPE_PHASE     String? @db.VarChar(9)
+  VOLTAGE_CLIENT         String? @db.VarChar(2)
+  CODE_REGROUPEMENT      String? @db.VarChar(35)
+  NOM_REGROUPEMENT       String? @db.VarChar(110)
+  CENTRE_DE_REVE         Int?
+  TYPE_COMPTEUR          String? @db.VarChar(17)
+  TYPE_CLIENT            String? @db.VarChar(8)
+  CATEGORIE_CLIENT       String? @db.VarChar(9)
+  REGION                 String? @db.VarChar(15)
+  DIVISION               String? @db.VarChar(25)
+  CODE_AGENCE            Int?
+  AGENCE                 String? @db.VarChar(35)
+
+  @@index([SERVICE_NUMBER])
+  @@index([CODE_CLIENT])
+  @@index([NO_COMPTEUR])
+  @@map("t_import_clients_cms")
+}
+
+model t_import_factures_cms {
+  NUMERO_FACTURE               Int     @id
+  SERVICE_NUMBER               Int?
+  MONTANT_HT                   Float?
+  MONTANT_TAXE                 Float?
+  MONTANT_TTC                  Float?
+  MONTANT_IMPAYE_TTC           Float?
+  CODE_STATUT_FACTURE          String? @db.VarChar(5)
+  LIBELLE_STATUT_FACTURE       String? @db.Text
+  CODE_TYPE_FACTURE            String? @db.VarChar(5)
+  LIBELLE_TYPE_FACTURE         String? @db.Text
+  DATE_MAJ_STATUT_FACTURE      String? @db.VarChar(19)
+  DATE_FACTURATION             String? @db.VarChar(19)
+  DATE_DISPO_FACTURE           String? @db.VarChar(19)
+  DATE_LIMITE_PAIEMENT_FACTURE String? @db.VarChar(19)
+
+  @@index([NUMERO_FACTURE])
+  @@index([SERVICE_NUMBER])
+  @@map("t_import_factures_cms")
+}
+
+model CustomerReference {
+  id          String   @id @default(uuid()) @db.Char(36)
+  region      String   @db.Char(50)
+  agency      String   @db.Char(50)
+  service_no  String
+  client_code String
+  status      String
+  client      String
+  category    String
+  supply_ref  String
+  meter_no    String
+  contact     String?
+  userId      String?
+  // Timestamps and user action tracting
+  createdBy   String   @db.Char(36)
+  createdAt   DateTime @default(now())
+
+  updatedBy String   @db.Char(36)
+  updatedAt DateTime @updatedAt
+
+  // Soft delete tracking
+  deleted   Boolean   @default(false)
+  deletedAt DateTime?
+  deletedBy String?   @db.Char(36)
+
+  // relationships
+  Creator User  @relation("createdBy", fields: [createdBy], references: [id])
+  Updater User  @relation("updatedBy", fields: [updatedBy], references: [id])
+  Deleter User? @relation("deletedBy", fields: [deletedBy], references: [id])
+
+  @@index([region])
+  @@index([service_no])
+  @@index([client_code])
+  @@index([supply_ref])
+  @@index([meter_no])
+  @@map("customers_reference")
+}
+
+model CustomerMMSNotReadable {
+  service_number Int      @id
+  // Timestamps and user action tracting
+  createdBy      String   @db.Char(36)
+  createdAt      DateTime @default(now())
+
+  updatedBy String   @db.Char(36)
+  updatedAt DateTime @updatedAt
+
+  // Soft delete tracking
+  deleted   Boolean   @default(false)
+  deletedAt DateTime?
+  deletedBy String?   @db.Char(36)
+
+  // relationships
+  Creator User  @relation("createdBy", fields: [createdBy], references: [id])
+  Updater User  @relation("updatedBy", fields: [updatedBy], references: [id])
+  Deleter User? @relation("deletedBy", fields: [deletedBy], references: [id])
+
+  @@index([service_number])
+  @@map("customers_mms_not_readable")
+}
+
+model CustomerMMSMeterReading {
+  id           String  @id @default(uuid()) @db.Char(36)
+  METER_NUMBER String
+  DATE_B       String?
+  HEURE_B      String?
+  ACTIF_IM_B   String?
+  ACTIF_EX_B   String?
+  REACTIF_IM_B String?
+  P_MAX_B      String?
+  ALARM        String?
+  DATE_I       String?
+  HEURE_I      String?
+  ACTIF_IM_I   String?
+  ACTIF_EX_I   String?
+  REACTIF_IM_I String?
+  P_MAX_I      String?
+  CHECK_METER  String?
+  RELAY_STATUS String?
+  READING_DATE String?
+
+  @@index([METER_NUMBER])
+  @@map("customers_mms_meter_reading")
+}
+
+// =============================================
+// 3. AUTHENTIFICATION & AUTHORIZATION MODELS
+// =============================================
+
+// User model - represents system users
+model User {
+  id       String  @id @default(uuid()) @db.Char(36)
+  username String  @unique
+  ldap     Boolean @default(false)
+
+  password          String
+  passwordExpiredAt DateTime?
+
+  // Account status fields
+  isActive            Boolean   @default(true)
+  isInActiveAt        DateTime?
+  failedLoginAttempts Int       @default(0)
+  lastFailedLoginAt   DateTime?
+
+  // Personnal relationships
+  peopleId String @db.Char(36)
+  People   People @relation(fields: [peopleId], references: [id])
+
+  customE_ViewScope   E_ViewScope? // Null = hérite du rôle
+  isCustomE_ViewScope Boolean      @default(false) // Si true, ignore viewScope
+
+  // Timestamps and user action tracting
+  createdBy String   @db.Char(36)
+  createdAt DateTime @default(now())
+
+  updatedBy String   @db.Char(36)
+  updatedAt DateTime @updatedAt
+
+  // Soft delete tracking
+  deleted   Boolean   @default(false)
+  deletedAt DateTime?
+  deletedBy String?   @db.Char(36)
+
+  Creator User  @relation("createdBy", fields: [createdBy], references: [id])
+  Updater User  @relation("updatedBy", fields: [updatedBy], references: [id])
+  Deleter User? @relation("deletedBy", fields: [deletedBy], references: [id])
+
+  BanksCreated                   Bank[]                           @relation("createdBy")
+  BanksUpdated                   Bank[]                           @relation("updatedBy")
+  BanksDeleted                   Bank[]                           @relation("deletedBy")
+  RolesCreated                   Role[]                           @relation("createdBy")
+  RolesUpdated                   Role[]                           @relation("updatedBy")
+  RolesDeleted                   Role[]                           @relation("deletedBy")
+  UsersCreated                   User[]                           @relation("createdBy")
+  UsersUpdated                   User[]                           @relation("updatedBy")
+  UsersDeleted                   User[]                           @relation("deletedBy")
+  RegionsCreated                 Region[]                         @relation("createdBy")
+  RegionsUpdated                 Region[]                         @relation("updatedBy")
+  RegionsDeleted                 Region[]                         @relation("deletedBy")
+  AgenciesCreated                Agency[]                         @relation("createdBy")
+  AgenciesUpdated                Agency[]                         @relation("updatedBy")
+  AgenciesDeleted                Agency[]                         @relation("deletedBy")
+  UserMFAsCreated                UserMFA[]                        @relation("createdBy")
+  UserMFAsUpdated                UserMFA[]                        @relation("updatedBy")
+  UserMFAsDeleted                UserMFA[]                        @relation("deletedBy")
+  UserRolesCreated               UserRole[]                       @relation("createdBy")
+  UserRolesUpdated               UserRole[]                       @relation("updatedBy")
+  UserRolesDeleted               UserRole[]                       @relation("deletedBy")
+  UserScopesCreated              UserScope[]                      @relation("createdBy")
+  UserScopesUpdated              UserScope[]                      @relation("updatedBy")
+  UserScopesDeleted              UserScope[]                      @relation("deletedBy")
+  RoleScopesCreated              RoleScope[]                      @relation("createdBy")
+  RoleScopesUpdated              RoleScope[]                      @relation("updatedBy")
+  RoleScopesDeleted              RoleScope[]                      @relation("deletedBy")
+  PermissionsCreated             Permission[]                     @relation("createdBy")
+  PermissionsUpdated             Permission[]                     @relation("updatedBy")
+  PermissionsDeleted             Permission[]                     @relation("deletedBy")
+  RolePermissionsCreated         RolePermission[]                 @relation("createdBy")
+  RolePermissionsUpdated         RolePermission[]                 @relation("updatedBy")
+  RolePermissionsDeleted         RolePermission[]                 @relation("deletedBy")
+  StatusCreated                  Status[]                         @relation("createdBy")
+  StatusUpdated                  Status[]                         @relation("updatedBy")
+  StatusDeleted                  Status[]                         @relation("deletedBy")
+  PeopleCreated                  People[]                         @relation("createdBy")
+  PeopleUpdated                  People[]                         @relation("updatedBy")
+  PeopleDeleted                  People[]                         @relation("deletedBy")
+  DelcomCreated                  Delcom[]                         @relation("createdBy")
+  DelcomUpdated                  Delcom[]                         @relation("updatedBy")
+  DelcomDeleted                  Delcom[]                         @relation("deletedBy")
+  TicketsCreated                 Ticket[]                         @relation("createdBy")
+  TicketsUpdated                 Ticket[]                         @relation("updatedBy")
+  TicketsDeleted                 Ticket[]                         @relation("deletedBy")
+  WorkflowsCreated               Workflow[]                       @relation("createdBy")
+  WorkflowsUpdated               Workflow[]                       @relation("updatedBy")
+  WorkflowsDeleted               Workflow[]                       @relation("deletedBy")
+  BankAgenciesCreated            BankAgency[]                     @relation("createdBy")
+  BankAgenciesUpdated            BankAgency[]                     @relation("updatedBy")
+  BankAgenciesDeleted            BankAgency[]                     @relation("deletedBy")
+  PaymentModesCreated            PaymentMode[]                    @relation("createdBy")
+  PaymentModesUpdated            PaymentMode[]                    @relation("updatedBy")
+  PaymentModesDeleted            PaymentMode[]                    @relation("deletedBy")
+  WorkflowStepsCreated           WorkflowStep[]                   @relation("createdBy")
+  WorkflowStepsUpdated           WorkflowStep[]                   @relation("updatedBy")
+  WorkflowStepsDeleted           WorkflowStep[]                   @relation("deletedBy")
+  CustomerReferenceCreated       CustomerReference[]              @relation("createdBy")
+  CustomerReferenceUpdated       CustomerReference[]              @relation("updatedBy")
+  CustomerReferenceDeleted       CustomerReference[]              @relation("deletedBy")
+  CustomerMMSNotReadableCreated  CustomerMMSNotReadable[]         @relation("createdBy")
+  CustomerMMSNotReadableUpdated  CustomerMMSNotReadable[]         @relation("updatedBy")
+  CustomerMMSNotReadableDeleted  CustomerMMSNotReadable[]         @relation("deletedBy")
+  WorkflowStepTransitionsCreated WorkflowTransition[]             @relation("createdBy")
+  WorkflowStepTransitionsUpdated WorkflowTransition[]             @relation("updatedBy")
+  WorkflowStepTransitionsDeleted WorkflowTransition[]             @relation("deletedBy")
+  WorkflowStepValidationsCreated WorkflowValidation[]             @relation("createdBy")
+  WorkflowStepValidationsUpdated WorkflowValidation[]             @relation("updatedBy")
+  WorkflowStepValidationsDeleted WorkflowValidation[]             @relation("deletedBy")
+  WorkflowValidationRolesCreated WorkflowValidationRole[]         @relation("createdBy")
+  WorkflowValidationRolesUpdated WorkflowValidationRole[]         @relation("updatedBy")
+  WorkflowValidationRolesDeleted WorkflowValidationRole[]         @relation("deletedBy")
+  WorkflowValidationUsersCreated WorkflowValidationUser[]         @relation("createdBy")
+  WorkflowValidationUsersUpdated WorkflowValidationUser[]         @relation("updatedBy")
+  WorkflowValidationUsersDeleted WorkflowValidationUser[]         @relation("deletedBy")
+  TicketTypeReasonsCreated       TicketTypeReason[]               @relation("createdBy")
+  TicketTypeReasonsUpdated       TicketTypeReason[]               @relation("updatedBy")
+  TicketTypeReasonsDeleted       TicketTypeReason[]               @relation("deletedBy")
+  TicketWorkflowsCreated         TicketWorkflow[]                 @relation("createdBy")
+  TicketWorkflowsUpdated         TicketWorkflow[]                 @relation("updatedBy")
+  TicketWorkflowsDeleted         TicketWorkflow[]                 @relation("deletedBy")
+  TicketTypesCreated             TicketType[]                     @relation("createdBy")
+  TicketTypesUpdated             TicketType[]                     @relation("updatedBy")
+  TicketTypesDeleted             TicketType[]                     @relation("deletedBy")
+  Job                            Job[]
+  Audit                          Audit[]
+  Ticket                         Ticket[]
+  UserMFA                        UserMFA[]
+  UserRole                       UserRole[]
+  UserScope                      UserScope[]
+  UserPasswordHistory            UserPasswordHistory[]
+  TicketHistory                  TicketHistory[]
+  TicketWorkflowValidationAction TicketWorkflowValidationAction[]
+  WorkflowValidationUser         WorkflowValidationUser[]
+
+  @@index([username])
+  @@index([peopleId])
+  @@index([createdBy])
+  @@index([updatedBy])
+  @@index([deletedBy])
+  @@index([username, deleted])
+  @@index([isActive])
+  @@map("users")
+}
+
+model UserScope {
+  id           String         @id @default(uuid())
+  userId       String
+  User         User           @relation(fields: [userId], references: [id], map: "user_scope_userId_fkey")
+  resourceType E_ResourceType // TICKET, CUSTOMER, etc.
+  scope        E_ViewScope // AGENCY/DELCOM/etc.
+  targetIds    Json? // IDs spécifiques pour CUSTOM
+
+  // Timestamps and user action tracting
+  createdBy String   @db.Char(36)
+  createdAt DateTime @default(now())
+
+  updatedBy String   @db.Char(36)
+  updatedAt DateTime @updatedAt
+
+  // Soft delete tracking
+  deleted   Boolean   @default(false)
+  deletedAt DateTime?
+  deletedBy String?   @db.Char(36)
+
+  Creator User  @relation("createdBy", fields: [createdBy], references: [id])
+  Updater User  @relation("updatedBy", fields: [updatedBy], references: [id])
+  Deleter User? @relation("deletedBy", fields: [deletedBy], references: [id])
+
+  @@unique([userId, resourceType]) // Contrainte d'unicité
+  @@index([resourceType])
+  @@index([createdBy])
+  @@index([updatedBy])
+  @@index([deletedBy])
+  @@map("user_scopes")
+}
+
+// Password history model - tracks user password changes
+model UserPasswordHistory {
+  id        String   @id @default(uuid())
+  userId    String   @db.Char(36)
+  User      User     @relation(fields: [userId], references: [id])
+  password  String
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@map("user_password_histories")
+}
+
+// MFA model - represents multi-factor authentication methods
+model UserMFA {
+  id        String      @id @default(uuid())
+  userId    String      @db.Char(36)
+  User      User        @relation(fields: [userId], references: [id])
+  method    E_MFAMethod
+  secret    String
+  isEnabled Boolean     @default(false)
+
+  // Timestamps and user action tracting
+  createdBy String   @db.Char(36)
+  createdAt DateTime @default(now())
+
+  updatedBy String   @db.Char(36)
+  updatedAt DateTime @updatedAt
+
+  // Soft delete tracking
+  deleted   Boolean   @default(false)
+  deletedAt DateTime?
+  deletedBy String?   @db.Char(36)
+
+  Creator User  @relation("createdBy", fields: [createdBy], references: [id])
+  Updater User  @relation("updatedBy", fields: [updatedBy], references: [id])
+  Deleter User? @relation("deletedBy", fields: [deletedBy], references: [id])
+
+  @@unique([userId, method])
+  @@index([userId])
+  @@index([method])
+  @@index([createdBy])
+  @@index([updatedBy])
+  @@index([deletedBy])
+  @@map("user_mfas")
+}
+
+// =============================================
+// 3. RBAC (ROLE-BASED ACCESS CONTROL)
+// =============================================
+
+model Role {
+  id                  String      @id @default(uuid()) @db.Char(36)
+  name                String      @unique
+  description         String?
+  viewScope           E_ViewScope @default(AGENCY)
+  isCustomE_ViewScope Boolean     @default(false) // Si true, ignore viewScope
+
+  // Timestamps and user action tracting
+  createdBy String   @db.Char(36)
+  createdAt DateTime @default(now())
+
+  updatedBy String   @db.Char(36)
+  updatedAt DateTime @updatedAt
+
+  // Soft delete tracking
+  deleted   Boolean   @default(false)
+  deletedAt DateTime?
+  deletedBy String?   @db.Char(36)
+
+  Creator User  @relation("createdBy", fields: [createdBy], references: [id])
+  Updater User  @relation("updatedBy", fields: [updatedBy], references: [id])
+  Deleter User? @relation("deletedBy", fields: [deletedBy], references: [id])
+
+  RolePermission         RolePermission[]
+  UserRole               UserRole[]
+  WorkflowValidationRole WorkflowValidationRole[]
+  RoleScope              RoleScope[]
+
+  @@index([name])
+  @@index([viewScope])
+  @@index([isCustomE_ViewScope])
+  @@index([createdBy])
+  @@index([updatedBy])
+  @@index([deletedBy])
+  @@map("roles")
+}
+
+model RoleScope {
+  id           String         @id @default(uuid())
+  roleId       String
+  Role         Role           @relation(fields: [roleId], references: [id])
+  resourceType E_ResourceType
+  scope        E_ViewScope
+  targetIds    Json? // Pour les scopes CUSTOM
+  isOverride   Boolean        @default(false) // Si true, ignore les userScopes
+
+  // Timestamps and user action tracting
+  createdBy String   @db.Char(36)
+  createdAt DateTime @default(now())
+
+  updatedBy String   @db.Char(36)
+  updatedAt DateTime @updatedAt
+
+  // Soft delete tracking
+  deleted   Boolean   @default(false)
+  deletedAt DateTime?
+  deletedBy String?   @db.Char(36)
+
+  Creator User  @relation("createdBy", fields: [createdBy], references: [id])
+  Updater User  @relation("updatedBy", fields: [updatedBy], references: [id])
+  Deleter User? @relation("deletedBy", fields: [deletedBy], references: [id])
+
+  @@unique([roleId, resourceType])
+  @@index([roleId, resourceType])
+  @@index([roleId])
+  @@index([createdBy])
+  @@index([updatedBy])
+  @@index([deletedBy])
+  @@map("role_scopes")
+}
+
+model UserRole {
+  userId    String
+  roleId    String
+  isDefault Boolean @default(false)
+  Role      Role    @relation(fields: [roleId], references: [id])
+  User      User    @relation(fields: [userId], references: [id])
+
+  // Timestamps and user action tracting
+  createdBy String   @db.Char(36)
+  createdAt DateTime @default(now())
+
+  updatedBy String   @db.Char(36)
+  updatedAt DateTime @updatedAt
+
+  // Soft delete tracking
+  deleted   Boolean   @default(false)
+  deletedAt DateTime?
+  deletedBy String?   @db.Char(36)
+
+  Creator User  @relation("createdBy", fields: [createdBy], references: [id])
+  Updater User  @relation("updatedBy", fields: [updatedBy], references: [id])
+  Deleter User? @relation("deletedBy", fields: [deletedBy], references: [id])
+
+  @@id([userId, roleId])
+  @@index([userId])
+  @@index([roleId])
+  @@map("user_roles")
+}
+
+model Permission {
+  id          String  @id @default(uuid()) @db.Char(36)
+  name        String  @unique
+  description String?
+
+  // Timestamps and user action tracting
+  createdBy String   @db.Char(36)
+  createdAt DateTime @default(now())
+
+  updatedBy String   @db.Char(36)
+  updatedAt DateTime @updatedAt
+
+  // Soft delete tracking
+  deleted   Boolean   @default(false)
+  deletedAt DateTime?
+  deletedBy String?   @db.Char(36)
+
+  Creator User  @relation("createdBy", fields: [createdBy], references: [id])
+  Updater User  @relation("updatedBy", fields: [updatedBy], references: [id])
+  Deleter User? @relation("deletedBy", fields: [deletedBy], references: [id])
+
+  RolePermission RolePermission[]
+
+  @@index([name])
+  @@index([createdBy])
+  @@index([updatedBy])
+  @@index([deletedBy])
+  @@map("permissions")
+}
+
+model RolePermission {
+  roleId       String
+  permissionId String
+  Permission   Permission @relation(fields: [permissionId], references: [id])
+  Role         Role       @relation(fields: [roleId], references: [id])
+
+  // Timestamps and user action tracting
+  createdBy String   @db.Char(36)
+  createdAt DateTime @default(now())
+
+  updatedBy String   @db.Char(36)
+  updatedAt DateTime @updatedAt
+
+  // Soft delete tracking
+  deleted   Boolean   @default(false)
+  deletedAt DateTime?
+  deletedBy String?   @db.Char(36)
+
+  Creator User  @relation("createdBy", fields: [createdBy], references: [id])
+  Updater User  @relation("updatedBy", fields: [updatedBy], references: [id])
+  Deleter User? @relation("deletedBy", fields: [deletedBy], references: [id])
+
+  @@id([roleId, permissionId])
+  @@index([permissionId])
+  @@index([roleId])
+  @@index([createdBy])
+  @@index([updatedBy])
+  @@index([deletedBy])
+  @@map("role_permissions")
+}
+
+// =============================================
+// 4. WORKFLOW STATE MANAGEMENT
+// =============================================
+model Workflow {
+  id          String  @id @default(uuid())
+  name        String  @unique
+  description String?
+  isActive    Boolean @default(true)
+  isDefault   Boolean @default(false)
+
+  // Timestamps and user action tracting
+  createdBy String   @db.Char(36)
+  createdAt DateTime @default(now())
+
+  updatedBy String   @db.Char(36)
+  updatedAt DateTime @updatedAt
+
+  // Soft delete tracking
+  deleted   Boolean   @default(false)
+  deletedAt DateTime?
+  deletedBy String?   @db.Char(36)
+
+  Creator User  @relation("createdBy", fields: [createdBy], references: [id])
+  Updater User  @relation("updatedBy", fields: [updatedBy], references: [id])
+  Deleter User? @relation("deletedBy", fields: [deletedBy], references: [id])
+
+  // relationships
+  Steps          WorkflowStep[]   @relation("WorkflowSteps")
+  TicketWorkflow TicketWorkflow[]
+
+  @@index([name])
+  @@index([isActive])
+  @@index([name, isActive])
+  @@index([name, isActive, isDefault])
+  @@index([createdBy])
+  @@index([updatedBy])
+  @@index([deletedBy])
+  @@map("workflows")
+}
+
+model WorkflowStep {
+  id          String   @id @default(uuid())
+  workflowId  String
+  Workflow    Workflow @relation("WorkflowSteps", fields: [workflowId], references: [id])
+  name        String
+  description String?
+  order       Int
+
+  // Timestamps and user action tracting
+  createdBy String   @db.Char(36)
+  createdAt DateTime @default(now())
+
+  updatedBy String   @db.Char(36)
+  updatedAt DateTime @updatedAt
+
+  // Soft delete tracking
+  deleted   Boolean   @default(false)
+  deletedAt DateTime?
+  deletedBy String?   @db.Char(36)
+
+  Creator User  @relation("createdBy", fields: [createdBy], references: [id])
+  Updater User  @relation("updatedBy", fields: [updatedBy], references: [id])
+  Deleter User? @relation("deletedBy", fields: [deletedBy], references: [id])
+
+  // relationships
+  OutgoingTransitions   WorkflowTransition[]             @relation("FromStepTransitions")
+  IncomingTransitions   WorkflowTransition[]             @relation("ToStepTransitions")
+  Tickets               TicketWorkflow[]
+  TicketValidations     TicketWorkflowValidationAction[]
+  Validations           WorkflowValidation[]             @relation("StepValidations")
+  TicketHistory         TicketHistory[]
+  TicketHistoryFromStep TicketHistory[]                  @relation("FromStepHistories")
+  TicketHistoryToStep   TicketHistory[]                  @relation("ToStepHistories")
+
+  @@unique([workflowId, order])
+  @@index([name])
+  @@index([workflowId])
+  @@index([createdBy])
+  @@index([updatedBy])
+  @@index([deletedBy])
+  @@map("workflow_steps")
+}
+
+model WorkflowTransition {
+  id             String           @id @default(uuid())
+  FromStep       WorkflowStep     @relation("FromStepTransitions", fields: [fromStepId], references: [id])
+  fromStepId     String
+  ToStep         WorkflowStep     @relation("ToStepTransitions", fields: [toStepId], references: [id])
+  toStepId       String
+  conditionType  E_ConditionType? //@default(EXPRESSION) // EXPRESSION/JSON_SCHEMA
+  conditionValue String? // Expression ou JSON
+  // Timestamps and user action tracting
+  createdBy      String           @db.Char(36)
+  createdAt      DateTime         @default(now())
+
+  updatedBy String   @db.Char(36)
+  updatedAt DateTime @updatedAt
+
+  // Soft delete tracking
+  deleted   Boolean   @default(false)
+  deletedAt DateTime?
+  deletedBy String?   @db.Char(36)
+
+  Creator User  @relation("createdBy", fields: [createdBy], references: [id])
+  Updater User  @relation("updatedBy", fields: [updatedBy], references: [id])
+  Deleter User? @relation("deletedBy", fields: [deletedBy], references: [id])
+
+  @@index([fromStepId, toStepId])
+  @@index([fromStepId])
+  @@index([createdBy])
+  @@index([updatedBy])
+  @@index([deletedBy])
+  @@map("workflow_steps_transition")
+}
+
+model WorkflowValidation {
+  id     String           @id @default(uuid())
+  type   E_ValidationType
+  Step   WorkflowStep     @relation("StepValidations", fields: [stepId], references: [id])
+  stepId String
+
+  ValidationRoles WorkflowValidationRole[]
+  ValidationUsers WorkflowValidationUser[]
+
+  timeoutHours  Int? // Délai avant escalation
+  timeoutStepId String? // Étape si timeout
+
+  requiredApprovals Int              @default(1) // Nombre d'approbations nécessaires
+  approvalPolicy    E_ApprovalPolicy @default(ANY) // ANY = une seule suffit, ALL = toutes requises
+  // Timestamps and user action tracting
+  createdBy         String           @db.Char(36)
+  createdAt         DateTime         @default(now())
+
+  updatedBy String   @db.Char(36)
+  updatedAt DateTime @updatedAt
+
+  // Soft delete tracking
+  deleted   Boolean   @default(false)
+  deletedAt DateTime?
+  deletedBy String?   @db.Char(36)
+
+  Creator User  @relation("createdBy", fields: [createdBy], references: [id])
+  Updater User  @relation("updatedBy", fields: [updatedBy], references: [id])
+  Deleter User? @relation("deletedBy", fields: [deletedBy], references: [id])
+
+  @@index([stepId])
+  @@index([createdBy])
+  @@index([updatedBy])
+  @@index([deletedBy])
+  @@map("workflow_validations")
+}
+
+// Table de jointure pour WorkflowValidation <=> Role
+model WorkflowValidationRole {
+  workflowValidationId String             @db.Char(36)
+  roleId               String             @db.Char(36)
+  WorkflowValidation   WorkflowValidation @relation(fields: [workflowValidationId], references: [id])
+  Role                 Role               @relation(fields: [roleId], references: [id])
+
+  // Timestamps and user action tracting
+  createdBy String   @db.Char(36)
+  createdAt DateTime @default(now())
+
+  updatedBy String   @db.Char(36)
+  updatedAt DateTime @updatedAt
+
+  // Soft delete tracking
+  deleted   Boolean   @default(false)
+  deletedAt DateTime?
+  deletedBy String?   @db.Char(36)
+
+  Creator User  @relation("createdBy", fields: [createdBy], references: [id])
+  Updater User  @relation("updatedBy", fields: [updatedBy], references: [id])
+  Deleter User? @relation("deletedBy", fields: [deletedBy], references: [id])
+
+  @@id([workflowValidationId, roleId])
+  @@index([workflowValidationId])
+  @@index([roleId])
+  @@index([createdBy])
+  @@index([updatedBy])
+  @@index([deletedBy])
+  @@map("workflow_validation_roles")
+}
+
+// Table de jointure pour WorkflowValidation <=> User
+model WorkflowValidationUser {
+  workflowValidationId String             @db.Char(36)
+  userId               String             @db.Char(36)
+  WorkflowValidation   WorkflowValidation @relation(fields: [workflowValidationId], references: [id])
+  User                 User               @relation(fields: [userId], references: [id])
+
+  // Timestamps and user action tracting
+  createdBy String   @db.Char(36)
+  createdAt DateTime @default(now())
+
+  updatedBy String   @db.Char(36)
+  updatedAt DateTime @updatedAt
+
+  // Soft delete tracking
+  deleted   Boolean   @default(false)
+  deletedAt DateTime?
+  deletedBy String?   @db.Char(36)
+
+  Creator User  @relation("createdBy", fields: [createdBy], references: [id])
+  Updater User  @relation("updatedBy", fields: [updatedBy], references: [id])
+  Deleter User? @relation("deletedBy", fields: [deletedBy], references: [id])
+
+  @@id([workflowValidationId, userId])
+  @@index([workflowValidationId])
+  @@index([userId])
+  @@index([createdBy])
+  @@index([updatedBy])
+  @@index([deletedBy])
+  @@map("workflow_validation_users")
+}
+
+// =============================================
+// 5. TICKETING SYSTEM
+// =============================================
+// Ticket - core work item model
+model TicketType {
+  id   String @id @default(uuid())
+  name String @unique
+  description String? 
+
+  // Timestamps and user action tracting
+  createdBy String   @db.Char(36)
+  createdAt DateTime @default(now())
+
+  updatedBy String   @db.Char(36)
+  updatedAt DateTime @updatedAt
+
+  // Soft delete tracking
+  deleted   Boolean   @default(false)
+  deletedAt DateTime?
+  deletedBy String?   @db.Char(36)
+
+  Creator User  @relation("createdBy", fields: [createdBy], references: [id])
+  Updater User  @relation("updatedBy", fields: [updatedBy], references: [id])
+  Deleter User? @relation("deletedBy", fields: [deletedBy], references: [id])
+
+  Ticket           Ticket[]
+  TicketTypeReason TicketTypeReason[]
+
+  @@index([name])
+  @@index([createdBy])
+  @@index([updatedBy])
+  @@index([deletedBy])
+  @@map("ticket_types")
+}
+
+model TicketTypeReason {
+  id           String @id @default(uuid())
+  TicketTypeId String
+  name         String 
+  description String? 
+
+  // Timestamps and user action tracting
+  createdBy String   @db.Char(36)
+  createdAt DateTime @default(now())
+
+  updatedBy String   @db.Char(36)
+  updatedAt DateTime @updatedAt
+
+  // Soft delete tracking
+  deleted   Boolean   @default(false)
+  deletedAt DateTime?
+  deletedBy String?   @db.Char(36)
+
+  Creator User  @relation("createdBy", fields: [createdBy], references: [id])
+  Updater User  @relation("updatedBy", fields: [updatedBy], references: [id])
+  Deleter User? @relation("deletedBy", fields: [deletedBy], references: [id])
+
+  Ticket     Ticket[]
+  TicketType TicketType @relation(fields: [TicketTypeId], references: [id])
+
+  @@index([name])
+  @@index([TicketTypeId])
+  @@index([createdBy])
+  @@index([updatedBy])
+  @@index([deletedBy])
+  @@unique([TicketTypeId, name]) // Unicité par type de ticket et nom de raison
+  @@map("ticket_type_reasons")
+}
+
+model Ticket {
+  id               String           @id @default(uuid())
+  reference        String
+  typeId           String           @db.Char(36)
+  TicketType       TicketType       @relation(fields: [typeId], references: [id])
+  reasonId         String           @db.Char(36)
+  TicketTypeReason TicketTypeReason @relation(fields: [reasonId], references: [id])
+  unpaidCount      Int?             @default(0)
+  unpaidAmount     Float?           @default(0)
+  comment          String?
+  status           E_TicketStatus
+  userId           String?          @db.Char(36)
+  User             User?            @relation(fields: [userId], references: [id])
+
+  // Timestamps and user action tracting
+  createdBy String   @db.Char(36)
+  createdAt DateTime @default(now())
+
+  updatedBy String   @db.Char(36)
+  updatedAt DateTime @updatedAt
+
+  // Soft delete tracking
+  deleted   Boolean   @default(false)
+  deletedAt DateTime?
+  deletedBy String?   @db.Char(36)
+
+  // relationships
+  Creator User  @relation("createdBy", fields: [createdBy], references: [id])
+  Updater User? @relation("updatedBy", fields: [updatedBy], references: [id])
+  Deleter User? @relation("deletedBy", fields: [deletedBy], references: [id])
+
+  Job               Job[]
+  TicketHistory     TicketHistory[]                  @relation("TicketHistories")
+  TicketWorkflow    TicketWorkflow[]
+  TicketValidations TicketWorkflowValidationAction[]
+
+  @@index([reference])
+  @@index([reasonId])
+  @@index([typeId])
+  @@index([status])
+  @@index([createdBy])
+  @@index([updatedBy])
+  @@index([deletedBy])
+  @@map("tickets")
+}
+
+model TicketWorkflow {
+  ticketId              String
+  workflowId            String
+  workflowCurrentStepId String
+
+  // relationships
+  Workflow            Workflow      @relation(fields: [workflowId], references: [id])
+  Ticket              Ticket        @relation(fields: [ticketId], references: [id])
+  WorkflowCurrentStep WorkflowStep? @relation(fields: [workflowCurrentStepId], references: [id])
+
+  // Timestamps and user action tracting
+  createdBy String   @db.Char(36)
+  createdAt DateTime @default(now())
+
+  updatedBy String   @db.Char(36)
+  updatedAt DateTime @updatedAt
+
+  // Soft delete tracking
+  deleted   Boolean   @default(false)
+  deletedAt DateTime?
+  deletedBy String?   @db.Char(36)
+
+  Creator User  @relation("createdBy", fields: [createdBy], references: [id])
+  Updater User  @relation("updatedBy", fields: [updatedBy], references: [id])
+  Deleter User? @relation("deletedBy", fields: [deletedBy], references: [id])
+
+  @@id([ticketId, workflowId])
+  @@index([ticketId])
+  @@index([workflowId])
+  @@index([workflowCurrentStepId])
+  @@index([createdBy])
+  @@index([updatedBy])
+  @@index([deletedBy])
+  @@map("ticket_workflow")
+}
+
+model TicketWorkflowValidationAction {
+  id             String                 @id @default(uuid())
+  ticketId       String                 @db.Char(36)
+  Ticket         Ticket                 @relation(fields: [ticketId], references: [id])
+  workflowStepId String                 @db.Char(36)
+  WorkflowStep   WorkflowStep           @relation(fields: [workflowStepId], references: [id])
+  userId         String                 @db.Char(36)
+  User           User                   @relation(fields: [userId], references: [id])
+  validatedAt    DateTime               @default(now())
+  status         E_ValidationActionType // "APPROVED" ou "REJECTED"
+  comment        String?
+
+  @@index([ticketId])
+  @@index([workflowStepId])
+  @@index([userId])
+  @@map("ticket_workflow_validation_actions")
+}
+
+model TicketHistory {
+  id         String        @id @default(uuid())
+  ticketId   String        @db.Char(36)
+  Ticket     Ticket        @relation("TicketHistories", fields: [ticketId], references: [id])
+  fromStepId String?       @db.Char(36)
+  FromStep   WorkflowStep? @relation("FromStepHistories", fields: [fromStepId], references: [id])
+  toStepId   String?
+  ToStep     WorkflowStep? @relation("ToStepHistories", fields: [toStepId], references: [id])
+
+  actionById     String
+  User           User?         @relation(fields: [actionById], references: [id])
+  actionAt       DateTime      @default(now())
+  comment        String?
+  WorkflowStep   WorkflowStep? @relation(fields: [workflowStepId], references: [id])
+  workflowStepId String?
+
+  @@index([fromStepId, toStepId])
+  @@index([fromStepId])
+  @@index([ticketId])
+  @@index([actionAt])
+  @@map("ticket_histories")
+}
+
+// =============================================
+// 6. JOB MANAGEMENT
+// =============================================
+model JobLock {
+  job_name   String   @id
+  is_running Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([is_running])
+  @@map("job_locks")
+}
+
+model Job {
+  id          Int           @id @default(autoincrement())
+  ticketId    String?
+  Ticket      Ticket?       @relation(fields: [ticketId], references: [id])
+  userId      String?
+  User        User?         @relation(fields: [userId], references: [id])
+  ressource   String
+  action      E_JobAction // "disconnect" ou "reconnect"
+  app         E_Application
+  appJobId    String? // Peut être null si erreur
+  error       String? // Description de l'erreur éventuelle
+  status      E_JobStatus   @default(PENDING) // "success" ou "failed"
+  attempts    Int           @default(0)
+  maxAttempts Int           @default(5)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  @@index([ressource])
+  @@index([app])
+  @@index([appJobId])
+  @@index([action])
+  @@index([status])
+  @@index([userId])
+  @@index([ticketId])
+  @@index([app, status])
+  @@map("jobs")
+}
+
+// =============================================
+// 7. AUDIT MANAGEMENT
+// =============================================
+model Audit {
+  id        Int          @id @default(autoincrement())
+  userId    String?      @db.Char(36)
+  User      User?        @relation(fields: [userId], references: [id])
+  ipAddress String?
+  action    String
+  details   String       @db.VarChar(5000)
+  endpoint  String
+  createdAt DateTime     @default(now())
+  source    E_SourceType
+
+  @@index([userId])
+  @@index([action])
+  @@index([source])
+  @@index([endpoint])
+  @@index([ipAddress])
+  @@map("audits")
+}
+
+// =============================================
+// 8. NOTIFICATION MANAGEMENT
+// =============================================
+model Notification {
+  id        Int                  @id @default(autoincrement())
+  userId    String?
+  email     String?
+  phone     String?
+  method    E_NotificationMethod
+  subject   String
+  message   String               @db.VarChar(5000)
+  template  String?
+  status    String               @default("unread")
+  sent      Boolean              @default(false)
+  sentAt    DateTime?
+  createdAt DateTime             @default(now())
+  updatedAt DateTime             @updatedAt
+
+  @@index([userId])
+  @@index([email])
+  @@index([phone])
+  @@index([method])
+  @@index([status])
+  @@index([sent])
+  @@map("notifications")
+}
+
+// =============================================
+// 9. OTHERS MODELS
+// =============================================
+
+model Bank {
+  id   String  @id @default(uuid()) @db.Char(36)
+  name String  @unique @db.VarChar(255)
+  code String?
+
+  // Timestamps and user action tracting
+  createdBy String   @db.Char(36)
+  createdAt DateTime @default(now())
+
+  updatedBy String   @db.Char(36)
+  updatedAt DateTime @updatedAt
+
+  // Soft delete tracking
+  deleted   Boolean   @default(false)
+  deletedAt DateTime?
+  deletedBy String?   @db.Char(36)
+
+  Creator User  @relation("createdBy", fields: [createdBy], references: [id])
+  Updater User  @relation("updatedBy", fields: [updatedBy], references: [id])
+  Deleter User? @relation("deletedBy", fields: [deletedBy], references: [id])
+
+  BankAgency BankAgency[]
+
+  @@index([name])
+  @@index([code])
+  @@index([createdBy])
+  @@index([updatedBy])
+  @@index([deletedBy])
+  @@map("banks")
+}
+
+model BankAgency {
+  id             String   @id @default(uuid()) @db.Char(36)
+  name           String   @unique
+  code           String?
+  town           String?
+  account_number String?
+  bankId         String   @db.Char(36)
+  Bank           Bank     @relation(fields: [bankId], references: [id])
+  // Timestamps and user action tracting
+  createdBy      String   @db.Char(36)
+  createdAt      DateTime @default(now())
+
+  updatedBy String   @db.Char(36)
+  updatedAt DateTime @updatedAt
+
+  // Soft delete tracking
+  deleted   Boolean   @default(false)
+  deletedAt DateTime?
+  deletedBy String?   @db.Char(36)
+
+  Creator User  @relation("createdBy", fields: [createdBy], references: [id])
+  Updater User  @relation("updatedBy", fields: [updatedBy], references: [id])
+  Deleter User? @relation("deletedBy", fields: [deletedBy], references: [id])
+
+  @@index([bankId])
+  @@index([name])
+  @@index([code])
+  @@index([town])
+  @@index([account_number])
+  @@index([createdBy])
+  @@index([updatedBy])
+  @@index([deletedBy])
+  @@map("bank_agencies")
+}
+
+model PaymentMode {
+  id   String @id @default(uuid()) @db.Char(36)
+  name String @unique @db.VarChar(255)
+
+  // Timestamps and user action tracting
+  createdBy String   @db.Char(36)
+  createdAt DateTime @default(now())
+
+  updatedBy String   @db.Char(36)
+  updatedAt DateTime @updatedAt
+
+  // Soft delete tracking
+  deleted   Boolean   @default(false)
+  deletedAt DateTime?
+  deletedBy String?   @db.Char(36)
+
+  Creator User  @relation("createdBy", fields: [createdBy], references: [id])
+  Updater User  @relation("updatedBy", fields: [updatedBy], references: [id])
+  Deleter User? @relation("deletedBy", fields: [deletedBy], references: [id])
+
+  @@index([name])
+  @@index([createdBy])
+  @@index([updatedBy])
+  @@index([deletedBy])
+  @@map("payment_modes")
+}
+
+model Status {
+  id        Int      @id @default(autoincrement())
+  name      String   @unique @db.VarChar(255)
+  // Timestamps and user action tracting
+  createdBy String   @db.Char(36)
+  createdAt DateTime @default(now())
+
+  updatedBy String   @db.Char(36)
+  updatedAt DateTime @updatedAt
+
+  // Soft delete tracking
+  deleted   Boolean   @default(false)
+  deletedAt DateTime?
+  deletedBy String?   @db.Char(36)
+
+  Creator User  @relation("createdBy", fields: [createdBy], references: [id])
+  Updater User  @relation("updatedBy", fields: [updatedBy], references: [id])
+  Deleter User? @relation("deletedBy", fields: [deletedBy], references: [id])
+
+  @@index([name])
+  @@index([createdBy])
+  @@index([updatedBy])
+  @@index([deletedBy])
+  @@map("status")
+}
+
+// =============================================
+// 10. VIEW DEFINITIONS
+// =============================================
+view v_users {
+  id        String    @id @default(uuid()) @db.Char(36)
+  name      String
+  email     String
+  phone     String?
+  ldap      Boolean
+  isActive  Boolean
+  status    String
+  deleted   Boolean
+  deletedAt DateTime?
+  roles     String?
+  delcom    String?
+  createdAt DateTime
+  updatedAt DateTime
+
+  @@map("v_users")
+}
+
+view v_users_id {
+  id       String  @id @default(uuid()) @db.Char(36)
+  name     String
+  email    String
+  password String
+  ldap     Boolean
+  isActive Boolean
+  deleted  Boolean
+  roleId   String?
+  delcomId String?
+
+  @@map("v_users_id")
+}
+
+view v_role_permissions {
+  id          String  @id @default(uuid()) @db.Char(36)
+  role        String
+  description String?
+  permissions String?
+
+  @@map("v_role_permissions")
+}
+
+view v_audits {
+  id                Int          @id @default(autoincrement())
+  userId            String?
+  userName          String?
+  userEmail         String?
+  username          String?
+  ipAddress         String?
+  action            String
+  details           String
+  endpoint          String
+  createdAt         DateTime
+  createdAtFormated String
+  source            E_SourceType
+
+  @@map("v_audits")
+}
+
+view v_tickets {
+  id                    String         @id @default(uuid())
+  reference             String
+  type                  String
+  comment               String?
+  unpaidCount           Int?           @default(0)
+  unpaidAmount          Float?         @default(0)
+  status                E_TicketStatus
+  workflowId            String?
+  workflowcurrentStepId String?
+  workflowStatus        String?
+
+  createdBy String
+  Creator   String
+  createdAt DateTime
+
+  updatedBy String
+  modifier  String?
+  updatedAt DateTime
+
+  // Indexes for query performance
+  @@index([workflowcurrentStepId], name: "idx_ticket_step")
+  @@index([status], name: "idx_ticket_status")
+  @@index([reference], name: "idx_ticket_reference")
+}
+
+view v_ticket_with_validator {
+  id                    String         @id @default(uuid())
+  reference             String
+  type                  String
+  comment               String?
+  unpaidCount           Int?           @default(0)
+  unpaidAmount          Float?         @default(0)
+  status                E_TicketStatus
+  workflowId            String?
+  workflowcurrentStepId String?
+  workflowStatus        String?
+
+  validatorUId    String?
+  validatorId     String?
+  validatorRoleId String?
+
+  createdBy String
+  Creator   String
+  createdAt DateTime
+
+  updatedBy String
+  modifier  String?
+  updatedAt DateTime
+
+  // Indexes for query performance
+  @@index([workflowcurrentStepId], name: "idx_ticket_step")
+  @@index([status], name: "idx_ticket_status")
+  @@index([reference], name: "idx_ticket_reference")
+  @@index([validatorUId], name: "idx_ticket_validatorUId")
+  @@index([validatorId], name: "idx_ticket_validatorId")
+  @@index([validatorRoleId], name: "idx_ticket_validatorRoleIdId")
+  @@index([validatorId, validatorRoleId], name: "idx_ticket_userRole")
+}
+
+view v_ticket {
+  id                    String         @id @default(uuid())
+  reference             String
+  type                  String
+  comment               String?
+  unpaidCount           Int?           @default(0)
+  unpaidAmount          Float?         @default(0)
+  status                E_TicketStatus
+  workflowId            String?
+  workflowcurrentStepId String?
+  workflowStatus        String?
+
+  SERVICE_NUMBER       Int
+  SUPPLY_POINT         Int?
+  CODE_CLIENT          Int?
+  NOM_CLIENT           String?
+  NO_COMPTEUR          String?
+  ADRESSE_CLIENT       String?
+  LIBELLE_TARIF_CLIENT String?
+  AGENCE               String?
+  REGION               String?
+  DIVISION             String?
+
+  validatorUId    String?
+  validatorId     String?
+  validatorRoleId String?
+
+  createdBy String
+  Creator   String
+  createdAt DateTime
+
+  updatedBy String
+  modifier  String?
+  updatedAt DateTime
+
+  // Indexes for query performance
+  @@index([workflowcurrentStepId], name: "idx_ticket_step")
+  @@index([status], name: "idx_ticket_status")
+  @@index([reference], name: "idx_ticket_reference")
+}
+
+view v_workflow {
+  id          String   @id
+  name        String
+  description String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime
+  createdBy   String
+  updatedAt   DateTime
+  updatedBy   String
+
+  @@map("v_workflows")
+}
+
+// =============================================
+// 11. ENUM DEFINITIONS
+// =============================================
+enum E_Application {
+  MMS
+  CMS
+  SAP
+}
+
+// Ticket lifecycle states
+enum E_TicketStatus {
+  DRAFT
+  NEW
+  PENDING_WORKFLOW_VALIDATION
+  APPROVED
+  REJECTED
+  IN_PROCESSING
+  COMPLETED
+  BLOCKED
+  CANCELLED
+}
+
+// Validation types for workflow steps
+enum E_ValidationType {
+  ROLE // Requires specific role
+  USER // Specific user approval
+  AUTO // Automatic validation
+}
+
+enum E_ResourceType {
+  TICKET
+  CUSTOMER
+  INVOICE
+  METER
+  JOB
+}
+
+enum E_ViewScope {
+  AGENCY // Ne voit que son agence
+  DELCOM // Voir tout la delcom
+  REGION // Voir toute la région
+  NATIONAL // Voir tout
+}
+
+// Multi-Factor Authentication methods
+enum E_MFAMethod {
+  TOTP
+  SMS
+  EMAIL
+  RECOVERY_CODE
+}
+
+enum E_EventAssignmentType {
+  ASSIGN
+  DISASSIGN
+}
+
+enum E_EventIntegrationType {
+  WAIT_GENERATION
+  GENERATED
+  PENDING
+  ONGOING
+  ONGOING_WITH_ISSUE
+  INTEGRATED
+  CANCELED
+}
+
+enum E_SourceType {
+  USER
+  SYSTEM
+}
+
+enum E_NotificationMethod {
+  EMAIL
+  SMS
+  WHATSAPP
+  INTERN
+  AVAILABLE
+}
+
+enum E_ApprovalPolicy {
+  ANY
+  ALL
+}
+
+enum E_ValidationActionType {
+  APPROVED
+  REJECTED
+}
+
+enum E_ConditionType {
+  EXPRESSION
+  JSON_SCHEMA
+}
+
+enum E_JobAction {
+  DISCONNECT
+  RECONNECT
+  CREATE
+  READ
+  UPDATE
+  DELETE
+}
+
+enum E_JobStatus {
+  PENDING
+  SUCCESS
+  FAILED
+}

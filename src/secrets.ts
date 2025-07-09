@@ -1,0 +1,117 @@
+import dotenv from 'dotenv';
+dotenv.config({ path: '.env' })
+
+const NODE_PORT = process.env.NODE_PORT!;
+const NODE_ORIGIN = process.env.NODE_ORIGIN!;
+const NODE_ENV = process.env.NODE_ENV!;
+
+const BASE_PATH = process.env.BASE_PATH!;
+
+const ADMIN_USERNAME = process.env.ADMIN_USERNAME!;
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL!;
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD!;
+
+const SALT_ROUNDS = process.env.SALT_ROUNDS;
+
+const ACTIVATION_TOKEN_SECRET = process.env.ACTIVATION_TOKEN_SECRET!;
+const ACTIVATION_TOKEN_EXPIRE = process.env.ACTIVATION_TOKEN_EXPIRE!;
+
+const ACCESS_TOKEN_SECRET = process.env.ACCESS_TOKEN_SECRET!;
+const ACCESS_TOKEN_EXPIRE = process.env.ACCESS_TOKEN_EXPIRE!;
+
+const REFRESH_TOKEN_SECRET = process.env.REFRESH_TOKEN_SECRET!;
+const REFRESH_TOKEN_EXPIRE = process.env.REFRESH_TOKEN_EXPIRE!;
+
+const DATABASE_EXTERNAL_SERVICE_NAME = process.env.DATABASE_EXTERNAL_SERVICE_NAME!;
+const DATABASE_EXTERNAL_HOSTNAME = process.env.DATABASE_EXTERNAL_HOSTNAME!;
+const DATABASE_EXTERNAL_PORT = process.env.DATABASE_EXTERNAL_PORT!;
+const DATABASE_EXTERNAL_USERNAME = process.env.DATABASE_EXTERNAL_USERNAME!;
+const DATABASE_EXTERNAL_PASSWORD = process.env.DATABASE_EXTERNAL_PASSWORD!;
+
+const LDAP_HOSTNAME = process.env.LDAP_HOSTNAME;
+const LDAP_PORT = process.env.LDAP_PORT;
+const LDAP_URL = `ldap://${LDAP_HOSTNAME}:${LDAP_PORT}`;
+
+const REDIS_HOSTNAME = process.env.REDIS_HOSTNAME;
+const REDIS_PORT = process.env.REDIS_PORT;
+const REDIS_PASSWORD = process.env.REDIS_PASSWORD;
+const REDIS_SESSION_EXPIRE = process.env.REDIS_SESSION_EXPIRE!;
+
+const FTP_HOST = process.env.FTP_HOST;
+const FTP_USER = process.env.FTP_USER;
+const FTP_PASSWORD = process.env.FTP_PASSWORD;
+const FTP_PORT = parseInt(process.env.FTP_PORT ?? '21');
+const FTP_LOCAL_PATH = process.env.FTP_LOCAL_PATH!;
+const FTP_BACKUP_PATH = process.env.FTP_BACKUP_PATH!;
+const FTP_REMOTE_PATH = process.env.FTP_REMOTE_PATH!;
+
+const SMTP_SERVICE = process.env.SMTP_SERVICE;
+const SMTP_HOST = process.env.SMTP_HOST;
+const SMTP_PORT = process.env.SMTP_PORT;
+const SMTP_CIPHERS = process.env.SMTP_CIPHERS;
+const SMTP_MAIL = process.env.SMTP_MAIL;
+const SMTP_PASSWORD = process.env.SMTP_PASSWORD;
+
+const MAIL_DOMAIN = process.env.MAIL_DOMAIN;
+const MAIL_NO_REPLY = process.env.MAIL_NO_REPLY;
+
+const MMS_WSDL_URL = process.env.MMS_WSDL_URL;
+const MMS_USER = process.env.MMS_USER;
+const MMS_PASSWORD = process.env.MMS_PASSWORD;
+const MMS_DBPROFILE = process.env.MMS_DBPROFILE;
+
+export {
+    NODE_PORT,
+    NODE_ORIGIN,
+    NODE_ENV,
+
+    BASE_PATH,
+
+    ADMIN_USERNAME,
+    ADMIN_EMAIL,
+    ADMIN_PASSWORD,
+
+    SALT_ROUNDS,
+    ACTIVATION_TOKEN_SECRET,
+    ACTIVATION_TOKEN_EXPIRE,
+    ACCESS_TOKEN_SECRET,
+    ACCESS_TOKEN_EXPIRE,
+    REFRESH_TOKEN_SECRET,
+    REFRESH_TOKEN_EXPIRE,
+
+    DATABASE_EXTERNAL_SERVICE_NAME,
+    DATABASE_EXTERNAL_HOSTNAME,
+    DATABASE_EXTERNAL_PORT,
+    DATABASE_EXTERNAL_USERNAME,
+    DATABASE_EXTERNAL_PASSWORD,
+
+    LDAP_URL,
+
+    REDIS_HOSTNAME,
+    REDIS_PORT,
+    REDIS_PASSWORD,
+    REDIS_SESSION_EXPIRE,
+
+    FTP_HOST,
+    FTP_USER,
+    FTP_PASSWORD,
+    FTP_PORT,
+    FTP_LOCAL_PATH,
+    FTP_BACKUP_PATH,
+    FTP_REMOTE_PATH,
+
+    SMTP_SERVICE,
+    SMTP_HOST,
+    SMTP_PORT,
+    SMTP_CIPHERS,
+    SMTP_MAIL,
+    SMTP_PASSWORD,
+
+    MAIL_DOMAIN,
+    MAIL_NO_REPLY,
+
+    MMS_WSDL_URL,
+    MMS_USER,
+    MMS_PASSWORD,
+    MMS_DBPROFILE
+}

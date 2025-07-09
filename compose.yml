@@ -1,0 +1,34 @@
+services:
+
+  mysql:
+    image: mysql:8.4.2
+    container_name: dev-mysql
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: password
+      MYSQL_DATABASE: icn_cashing
+      MYSQL_USER: icncashing
+      MYSQL_PASSWORD: icnCMR_2030+
+    volumes: 
+      - "./data/database:/var/lib/mysql"
+    ports:
+      - "1000:3306"
+    
+  adminer:
+    image: adminer
+    container_name: dev-adminer
+    ports:
+      - "1001:8080"
+    restart: unless-stopped
+
+  cache:
+    image: redis/redis-stack:latest
+    container_name: dev-redis-stack
+    restart: always
+    ports:
+      - "1002:6379"
+      # - "1003:8001"
+    env_file: .env
+    command: redis-server --save 20 1 --requirepass ${REDIS_PASSWORD}
+    volumes:
+      - ./data/cache:/data
