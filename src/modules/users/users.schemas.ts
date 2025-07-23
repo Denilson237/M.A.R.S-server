@@ -19,6 +19,7 @@ const signUpSchema = z.object({
 
 const updateSchema = z.object({
     name: z.string().min(3).optional(),
+    username: z.string().min(3).optional(),
     email: z.string().email().optional(),
     phone: z.string().optional(),
     unitId: z.string().nullable().optional(),

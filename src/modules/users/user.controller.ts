@@ -79,6 +79,7 @@ export const create = async (req: Request, res: Response, next: NextFunction) =>
             updatedBy: user.id
         }
     });
+    
     // let role;
     // if (!roleId) {
     //     // default role

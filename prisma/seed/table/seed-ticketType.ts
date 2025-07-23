@@ -46,7 +46,7 @@ export async function seed_ticketTypes() {
     }
 
     for (const reason of reasons) {
-      const existingReason = await prisma.ticketTypeReason.findUnique({
+      const existingReason = await prisma.ticketTypeReason.findFirst({
         where: { name: reason.value },
       });
 

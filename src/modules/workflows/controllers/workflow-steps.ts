@@ -4,8 +4,8 @@ import { redis } from '../../../core/utils/redis';
 import prismaClient from '../../../core/utils/prismadb';
 import NotFoundException from '../../../core/exceptions/not-found';
 import { ErrorCode } from '../../../core/exceptions/http-exception';
-import UnprocessableException from '../../../core/exceptions/unprocessable';
-
+import UnprocessableException from '../../../core/exceptions/unprocessable'; // solution
+import { HTTPSTATUS } from '../../../config/http.config'; // modification
 import BadRequestException from '../../../core/exceptions/bad-requests';
 
 import UnauthorizedException from '../../../core/exceptions/unauthorized';

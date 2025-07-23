@@ -10,7 +10,7 @@ import BadRequestException from '../../../core/exceptions/bad-requests';
 import UnauthorizedException from '../../../core/exceptions/unauthorized';
 import UnprocessableException from '../../../core/exceptions/unprocessable';
 import { getUserConnected } from '../../../core/utils/authentificationService';
-
+import { idSchema } from "../..//users/users.schemas";
 
 
 //-----------------------------------------------------------------------------
@@ -23,8 +23,8 @@ export const create =
         // Validate input
         const parsedInput = schema.parse(req.body);
         // search if the name already exists
-        const isAlready = await prismaClient.v_workflow.findFirst({ where: { name: parsedInput.name } });
-        if (isAlready) throw new UnprocessableException("Duplicate setting name",req.body, ErrorCode.RESSOURCE_ALREADY_EXISTS);
+        const isAlready = await prismaClient.workflow.findFirst({ where: { name: parsedInput.name } });
+        if (isAlready) throw new UnprocessableException("This workflow name is not available. Please choose a different one.",req.body, ErrorCode.RESSOURCE_ALREADY_EXISTS);
 
         // Get the user connected
         const user = await getUserConnected(req);
@@ -168,7 +168,7 @@ export const getById =
         const data = await prismaClient.v_workflow.findUnique({
             where: { id: id },
         });
-        if (!data) throw new NotFoundException("Customer reference not found", ErrorCode.RESOURCE_NOT_FOUND);
+        if (!data) throw new NotFoundException("Workflow not found", ErrorCode.RESOURCE_NOT_FOUND);
 
         res.status(HTTPSTATUS.OK).json({
             success: true,
@@ -233,7 +233,32 @@ export const remove =
 
     };
 
+export const disactiveReactiveWorkflow =
+    async (req: Request, res: Response, next: NextFunction) => {
+        const { id } = req.params;
 
+        if (!id) throw new BadRequestException('Invalid params', ErrorCode.VALIDATION_INVALID_DATA);
+        if (!idSchema.parse(id)) throw new BadRequestException('Invalid ID format', ErrorCode.VALIDATION_INVALID_DATA);
+
+        const workflow = await prismaClient.workflow.findUnique({
+            where: { id },
+        });
+
+        if (!workflow) throw new NotFoundException('Workflow not found', ErrorCode.RESOURCE_NOT_FOUND);
+
+        const data = await prismaClient.workflow.update({
+            where: { id },
+            data: {
+                isActive: !workflow.isActive,
+            },
+        });
+
+        res.status(HTTPSTATUS.OK).json({
+            success: true,
+            status: data.isActive ? 'active' : 'inactive',
+            data,
+        });
+    };
 //-----------------------------------------------------------------------------
 //             BULK-CREATE workflow : post /workflows
 //-----------------------------------------------------------------------------

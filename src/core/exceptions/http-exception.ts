@@ -1,6 +1,6 @@
 import { ErrorCode } from "../enums/error-code.enum";
 import { HttpStatusCode } from "../../config/http.config";
-
+export { ErrorCode }; // modification
 
 class HttpException extends Error {
     message: string;

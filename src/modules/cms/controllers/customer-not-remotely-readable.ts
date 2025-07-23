@@ -4,9 +4,9 @@ import { redis } from '../../../core/utils/redis';
 import prismaClient from '../../../core/utils/prismadb';
 import NotFoundException from '../../../core/exceptions/not-found';
 import { ErrorCode } from '../../../core/exceptions/http-exception';
-
 import BadRequestException from '../../../core/exceptions/bad-requests';
 import UnauthorizedException from '../../../core/exceptions/unauthorized';
+import { HTTPSTATUS } from '../../../config/http.config';
 
 const key = 'customer-not-remotely-readable';
 
@@ -260,7 +260,8 @@ export const remove =
             where: { id: req.user?.id },
         });
         if (!user) throw new UnauthorizedException("Unauthorize ressource", ErrorCode.AUTH_UNAUTHORIZED_ACCESS);
-        await prismaClient.transaction.update({
+        //await prismaClient.transaction.update({
+        await prismaClient.customerReference.update({
             where: { id: id },
             data: {
                 deleted: true,

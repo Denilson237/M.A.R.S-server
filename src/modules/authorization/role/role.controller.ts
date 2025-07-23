@@ -254,11 +254,12 @@ export const getById =
 //-----------------------------------------------------------------------------
 export const update =
     async (req: Request, res: Response, next: NextFunction) => {
+
         const { id } = req.params;
         if (!id || typeof id !== 'string') throw new BadRequestException('Invalid role ID format', ErrorCode.VALIDATION_INVALID_DATA)
 
         const parsedRole = roleSchema.parse(req.body); // Validate input
-
+        const user = await getUserConnected(req);
         const updatedRole = await prismaClient.$transaction(async (prisma) => {
             // 1. Mise à jour des informations de base du rôle
             const role = await prisma.role.update({
@@ -295,8 +296,8 @@ export const update =
                     data: parsedRole.permissionsId.map(permissionId => ({
                         roleId: id,
                         permissionId,
-                        createdBy: "", //TODO
-                        updatedBy: ""
+                        createdBy: user.id, //TODO
+                        updatedBy: user.id
                     }))
                 });
             }
